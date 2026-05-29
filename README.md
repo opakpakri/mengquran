@@ -38,18 +38,42 @@
 
 ## 🚀 Getting Started
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-2. **Run Development Server**:
-   ```bash
-   npm run dev
-   ```
-3. **Build for Production**:
-   ```bash
-   npm run build
-   ```
+Follow these steps to run Mengetype locally on your system:
+
+### 1. Prerequisites
+
+Ensure you have [Node.js](https://nodejs.org/) (v18.0.0 or higher recommended) installed.
+
+### 2. Clone the Repository
+
+```bash
+git clone https://github.com/opakpakri/mengquran.git
+cd mengquran
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4. Start the Development Server
+
+```bash
+npm run dev
+```
+
+Open your browser and navigate to `http://localhost:5173`.
+
+### 5. Build for Production
+
+To generate a highly optimized production build:
+
+```bash
+npm run build
+```
+
+The output assets will be created in the `/dist` directory.
 
 ---
 
