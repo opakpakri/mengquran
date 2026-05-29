@@ -21,9 +21,14 @@ function Footer() {
             <span className="text-xs">opakptw</span>
           </a>
           <span className="text-slate-300 dark:text-slate-700 select-none text-[10px]">•</span>
-          <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1 rounded-md text-emerald-600 dark:text-emerald-400 font-semibold select-none">
+          <a
+            href="https://api.myquran.com/v3/doc"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1 rounded-md text-emerald-600 dark:text-emerald-400 font-semibold transition-colors hover:bg-emerald-100 dark:hover:bg-emerald-900/35 cursor-pointer"
+          >
             API Muslim v3
-          </span>
+          </a>
         </div>
       </div>
     </footer>

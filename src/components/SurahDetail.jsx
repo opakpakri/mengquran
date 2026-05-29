@@ -12,6 +12,8 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
   // Audio state
   const [playingAudioId, setPlayingAudioId] = useState(null); // 'surah' or 'ayah-{number}'
   const audioRef = useRef(null);
+  const [playingSurahSequential, setPlayingSurahSequential] = useState(false);
+  const [currentPlayingAyahIndex, setCurrentPlayingAyahIndex] = useState(null);
 
   // Text Font Size States
   const [arabicSize, setArabicSize] = useState(() => {
@@ -51,7 +53,8 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
         setPlayingAudioId(null);
       }
       try {
-        const res = await fetch(`https://api.myquran.com/v3/quran/${surahNumber}`);
+        // Fetch first page with limit 100
+        const res = await fetch(`https://api.myquran.com/v3/quran/${surahNumber}?limit=100&page=1`);
         const data = await res.json();
         
         let equranAyat = [];
@@ -66,7 +69,28 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
         }
 
         if (data.status && data.data) {
-          const enrichedAyahs = data.data.ayahs.map(ayah => {
+          let myQuranAyahs = [...data.data.ayahs];
+          const totalAyahs = data.data.number_of_ayahs;
+          
+          // If total ayahs is greater than 100, fetch the remaining pages
+          if (totalAyahs > 100) {
+            const totalPages = Math.ceil(totalAyahs / 100);
+            const pagePromises = [];
+            for (let p = 2; p <= totalPages; p++) {
+              pagePromises.push(
+                fetch(`https://api.myquran.com/v3/quran/${surahNumber}?limit=100&page=${p}`)
+                  .then(r => r.json())
+              );
+            }
+            const pageResults = await Promise.all(pagePromises);
+            for (const pageRes of pageResults) {
+              if (pageRes.status && pageRes.data && pageRes.data.ayahs) {
+                myQuranAyahs = myQuranAyahs.concat(pageRes.data.ayahs);
+              }
+            }
+          }
+
+          const enrichedAyahs = myQuranAyahs.map(ayah => {
             const match = equranAyat.find(a => a.nomorAyat === ayah.ayah_number);
             return {
               ...ayah,
@@ -117,12 +141,69 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      setPlayingSurahSequential(false);
+      setCurrentPlayingAyahIndex(null);
     };
   }, []);
 
-  // Handle Play Audio (Full Surah or Individual Ayah)
+  // Play individual ayah sequentially
+  const playAyahAtIndex = (index, ayahsList) => {
+    if (index >= ayahsList.length) {
+      setPlayingSurahSequential(false);
+      setCurrentPlayingAyahIndex(null);
+      setPlayingAudioId(null);
+      return;
+    }
+
+    const currentAyah = ayahsList[index];
+    setCurrentPlayingAyahIndex(index);
+    setPlayingAudioId(`ayah-${currentAyah.ayah_number}`);
+
+    // Scroll smoothly to active verse
+    const element = document.getElementById(`ayah-${currentAyah.ayah_number}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    audioRef.current = new Audio(currentAyah.audio_url);
+    audioRef.current.play().catch(e => {
+      console.error("Audio sequential playback error:", e);
+      playAyahAtIndex(index + 1, ayahsList);
+    });
+
+    audioRef.current.onended = () => {
+      playAyahAtIndex(index + 1, ayahsList);
+    };
+  };
+
+  const handlePlaySurahSequential = () => {
+    if (playingSurahSequential) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setPlayingSurahSequential(false);
+      setCurrentPlayingAyahIndex(null);
+      setPlayingAudioId(null);
+    } else {
+      if (surah && surah.ayahs && surah.ayahs.length > 0) {
+        setPlayingSurahSequential(true);
+        playAyahAtIndex(0, surah.ayahs);
+      }
+    }
+  };
+
+  // Handle Play Audio (Individual Ayah)
   const handlePlayAudio = (url, id) => {
     if (!url) return;
+
+    if (playingSurahSequential) {
+      setPlayingSurahSequential(false);
+      setCurrentPlayingAyahIndex(null);
+    }
 
     if (playingAudioId === id && audioRef.current) {
       audioRef.current.pause();
@@ -135,7 +216,6 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
       setPlayingAudioId(id);
       audioRef.current.play().catch(e => console.error("Audio playback error:", e));
       audioRef.current.onended = () => {
-        // If playing individual ayah, we can stop. If full surah, stop.
         setPlayingAudioId(null);
       };
     }
@@ -180,6 +260,8 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
       </div>
     );
   }
+
+  const isAnyPlaying = playingAudioId !== null;
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fade-in">
@@ -247,17 +329,17 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
         )}
 
         {/* Play Full Surah Audio Button */}
-        {surah.audio_url && (
+        {surah.ayahs && surah.ayahs.length > 0 && (
           <div className="flex justify-center mt-6">
             <button
-              onClick={() => handlePlayAudio(surah.audio_url, 'surah')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                playingAudioId === 'surah'
-                  ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
+              onClick={handlePlaySurahSequential}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${
+                playingSurahSequential
+                  ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20 scale-105'
                   : 'bg-white text-emerald-800 hover:bg-emerald-50 shadow-md'
               }`}
             >
-              {playingAudioId === 'surah' ? (
+              {playingSurahSequential ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
                   <span>Menghentikan Murottal Surah</span>
@@ -341,20 +423,42 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
         {surah.ayahs && surah.ayahs.map((ayah) => {
           const isBookmarked = bookmarks.some(b => b.surahNumber === surah.number && b.ayahNumber === ayah.ayah_number);
           const isLastRead = lastRead?.surahNumber === surah.number && lastRead?.ayahNumber === ayah.ayah_number;
+          const isPlaying = playingAudioId === `ayah-${ayah.ayah_number}`;
           const isTafsirOpen = expandedTafsir[ayah.ayah_number];
           const activeTafsirTab = tafsirTabs[ayah.ayah_number] || 'kemenag_short';
+
+          let cardStyle = "transition-all duration-500 rounded-2xl p-5 sm:p-6 shadow-sm border ";
+          if (isPlaying) {
+            cardStyle += "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-400 scale-[1.02] shadow-lg shadow-emerald-500/10 dark:shadow-emerald-950/30 ring-2 ring-emerald-500/20 dark:ring-emerald-400/20 z-10 relative";
+          } else if (isAnyPlaying) {
+            cardStyle += "opacity-45 scale-[0.985] border-slate-100 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/40 blur-[0.2px]";
+          } else {
+            cardStyle += "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800/80 hover:shadow-md hover:border-slate-200 dark:hover:border-slate-700/80";
+          }
 
           return (
             <div
               key={ayah.ayah_number}
               id={`ayah-${ayah.ayah_number}`}
-              className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-sm hover:shadow-md"
+              className={cardStyle}
             >
               {/* Header Ayat Panel */}
               <div className="flex items-center justify-between gap-4 mb-5 border-b border-slate-50 dark:border-slate-800/50 pb-3 flex-wrap">
-                <span className="text-xs font-bold px-3 py-1 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 rounded-lg">
-                  {surah.number} : {ayah.ayah_number}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-3 py-1 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 rounded-lg">
+                    {surah.number} : {ayah.ayah_number}
+                  </span>
+                  {isPlaying && (
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 rounded-lg">
+                      <span className="flex items-end gap-0.5 h-3 w-4 justify-center pb-0.5">
+                        <span className="w-[3px] bg-emerald-500 dark:bg-emerald-400 rounded-full animate-soundwave-1"></span>
+                        <span className="w-[3px] bg-emerald-500 dark:bg-emerald-400 rounded-full animate-soundwave-2"></span>
+                        <span className="w-[3px] bg-emerald-500 dark:bg-emerald-400 rounded-full animate-soundwave-3"></span>
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wider">Memutar</span>
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-2">
                   {/* Terakhir Baca Button */}
@@ -391,13 +495,13 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
                   <button
                     onClick={() => handlePlayAudio(ayah.audio_url, `ayah-${ayah.ayah_number}`)}
                     className={`p-2 rounded-xl transition-all duration-150 cursor-pointer ${
-                      playingAudioId === `ayah-${ayah.ayah_number}`
+                      isPlaying
                         ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/20'
                         : 'text-slate-400 hover:text-emerald-500 hover:bg-slate-50 dark:hover:bg-slate-800/40'
                     }`}
                     title="Putar audio ayat"
                   >
-                    {playingAudioId === `ayah-${ayah.ayah_number}` ? (
+                    {isPlaying ? (
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -414,7 +518,11 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
               {/* Arabic Script */}
               <div className="text-right mb-4">
                 <p 
-                  className="arabic-text text-slate-800 dark:text-slate-100 font-arabic tracking-wide select-none"
+                  className={`arabic-text font-arabic tracking-wide select-none transition-all duration-300 ${
+                    isPlaying 
+                      ? 'text-emerald-800 dark:text-emerald-300 font-bold drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]' 
+                      : 'text-slate-800 dark:text-slate-100'
+                  }`}
                   style={{ fontSize: `${arabicSize}rem`, lineHeight: `${arabicSize * 1.3}rem` }}
                 >
                   {ayah.arab}
@@ -424,7 +532,11 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
               {/* Latin Transliteration */}
               {ayah.latin && (
                 <p 
-                  className="text-emerald-600 dark:text-emerald-400 leading-relaxed font-light mb-3 select-none italic"
+                  className={`leading-relaxed font-light mb-3 select-none italic transition-all duration-300 ${
+                    isPlaying 
+                      ? 'text-emerald-600 dark:text-emerald-300 font-bold drop-shadow-[0_0_6px_rgba(16,185,129,0.25)]' 
+                      : 'text-emerald-600 dark:text-emerald-400'
+                  }`}
                   style={{ fontSize: `${translationSize}rem` }}
                 >
                   {ayah.latin}
@@ -433,7 +545,11 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
 
               {/* Translation */}
               <p 
-                className="text-slate-700 dark:text-slate-300 leading-relaxed font-light mb-4 select-none"
+                className={`leading-relaxed font-light mb-4 select-none transition-all duration-300 ${
+                  isPlaying 
+                    ? 'text-slate-900 dark:text-slate-100 font-medium' 
+                    : 'text-slate-700 dark:text-slate-300'
+                }`}
                 style={{ fontSize: `${translationSize}rem` }}
               >
                 {ayah.translation}
