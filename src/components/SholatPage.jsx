@@ -30,10 +30,19 @@ function SholatPage() {
 
   const cleanCityName = (name) => {
     if (!name) return '';
-    return name
-      .replace(/^(kabupaten|kab\.\s*|kab\s+|kota\s+)/i, '')
-      .replace(/\s+(kabupaten|kab\.\s*|kab|kota)/i, '')
+    let cleaned = name.trim();
+    
+    // Check if it's Jakarta
+    if (/jakarta/i.test(cleaned)) {
+      return 'Jakarta';
+    }
+    
+    cleaned = cleaned
+      .replace(/^(kabupaten|kab\.\s*|kab\s+|kota\s+|city\s+of\s+|city\s+)/i, '')
+      .replace(/\s+(kabupaten|kab\.\s*|kab|kota|regency|city|county|municipality|district)/i, '')
       .trim();
+      
+    return cleaned;
   };
 
   const detectLocation = () => {
@@ -41,17 +50,32 @@ function SholatPage() {
     
     const geocodeCoords = async (lat, lon) => {
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`, {
-          headers: { 'User-Agent': 'Mengquran Web App' }
-        });
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
         const data = await res.json();
         
         if (data && data.address) {
           const addr = data.address;
-          const rawCityName = addr.city || addr.town || addr.village || addr.regency || addr.municipality || addr.county || addr.state_district;
-          if (rawCityName) {
-            await searchAndSetCity(rawCityName);
-            return true;
+          // Gather candidate fields in order of priority
+          const candidates = [
+            addr.city,
+            addr.regency,
+            addr.county,
+            addr.state_district,
+            addr.municipality,
+            addr.town,
+            addr.village,
+            addr.suburb
+          ].filter(Boolean);
+          
+          for (const candidate of candidates) {
+            try {
+              const found = await searchAndSetCity(candidate);
+              if (found) {
+                return true;
+              }
+            } catch (e) {
+              console.warn(`Search failed for candidate: ${candidate}`, e);
+            }
           }
         }
         return false;
@@ -69,15 +93,15 @@ function SholatPage() {
       const data = await res.json();
       
       if (data.status && data.data && data.data.length > 0) {
-        let bestMatch = data[0];
+        let bestMatch = data.data[0];
         const isRegency = /regency|kabupaten|kab/i.test(rawCityName);
         const isKota = /city|kota|town/i.test(rawCityName);
         
         if (isRegency) {
-          const match = data.find(c => c.lokasi.toUpperCase().includes('KAB.'));
+          const match = data.data.find(c => c.lokasi.toUpperCase().includes('KAB.'));
           if (match) bestMatch = match;
         } else if (isKota) {
-          const match = data.find(c => c.lokasi.toUpperCase().includes('KOTA'));
+          const match = data.data.find(c => c.lokasi.toUpperCase().includes('KOTA'));
           if (match) bestMatch = match;
         }
         
@@ -99,6 +123,7 @@ function SholatPage() {
             popup: 'rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-md font-sans'
           }
         });
+        return true;
       } else {
         throw new Error('Kota tidak ditemukan di database myQuran');
       }
