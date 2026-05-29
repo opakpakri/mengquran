@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookmark, onSelectSurah }) {
+function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookmark, onSelectSurah, lastRead, updateLastRead }) {
   const [surah, setSurah] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -235,6 +235,7 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
       <div className="space-y-6">
         {surah.ayahs && surah.ayahs.map((ayah) => {
           const isBookmarked = bookmarks.some(b => b.surahNumber === surah.number && b.ayahNumber === ayah.ayah_number);
+          const isLastRead = lastRead?.surahNumber === surah.number && lastRead?.ayahNumber === ayah.ayah_number;
           const isTafsirOpen = expandedTafsir[ayah.ayah_number];
           const activeTafsirTab = tafsirTabs[ayah.ayah_number] || 'kemenag_short';
 
@@ -251,6 +252,21 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
                 </span>
 
                 <div className="flex items-center gap-2">
+                  {/* Terakhir Baca Button */}
+                  <button
+                    onClick={() => updateLastRead(surah.number, surah.name_latin, ayah.ayah_number)}
+                    className={`p-2 rounded-xl transition-all duration-150 cursor-pointer ${
+                      isLastRead
+                        ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20'
+                        : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                    }`}
+                    title={isLastRead ? 'Ayat ini ditandai terakhir dibaca' : 'Tandai terakhir dibaca'}
+                  >
+                    <svg className="w-5 h-5" fill={isLastRead ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                    </svg>
+                  </button>
+
                   {/* Bookmark Button */}
                   <button
                     onClick={() => toggleBookmark(surah.number, surah.name_latin, ayah.ayah_number)}

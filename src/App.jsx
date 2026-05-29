@@ -29,6 +29,15 @@ function App() {
     }
   });
 
+  const [lastRead, setLastRead] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mengquran_last_read');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [darkMode, setDarkMode] = useState(() => {
     try {
       const saved = localStorage.getItem('mengquran_dark_mode');
@@ -55,6 +64,15 @@ function App() {
   useEffect(() => {
     localStorage.setItem('mengquran_bookmarks', JSON.stringify(bookmarks));
   }, [bookmarks]);
+
+  // Last Read Sync
+  useEffect(() => {
+    if (lastRead) {
+      localStorage.setItem('mengquran_last_read', JSON.stringify(lastRead));
+    } else {
+      localStorage.removeItem('mengquran_last_read');
+    }
+  }, [lastRead]);
 
   // Fetch Surah List
   useEffect(() => {
@@ -130,6 +148,15 @@ function App() {
     });
   };
 
+  // Update Last Read
+  const updateLastRead = (surahNumber, surahNameLatin, ayahNumber) => {
+    setLastRead({
+      surahNumber,
+      surahNameLatin,
+      ayahNumber
+    });
+  };
+
   // Filter Surah List
   const filteredSurahs = surahs.filter(surah =>
     surah.name_latin.toLowerCase().includes(searchSurah.toLowerCase()) ||
@@ -154,6 +181,7 @@ function App() {
               searchSurah={searchSurah}
               setSearchSurah={setSearchSurah}
               onSelectSurah={handleSelectSurah}
+              lastRead={lastRead}
             />
             
             {/* Surah List Grid */}
@@ -204,6 +232,8 @@ function App() {
             bookmarks={bookmarks}
             toggleBookmark={toggleBookmark}
             onSelectSurah={handleSelectSurah}
+            lastRead={lastRead}
+            updateLastRead={updateLastRead}
           />
         )}
 

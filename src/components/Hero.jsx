@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function Hero({ searchSurah, setSearchSurah, onSelectSurah }) {
+function Hero({ searchSurah, setSearchSurah, onSelectSurah, lastRead }) {
   const [randomAyah, setRandomAyah] = useState(null);
   const [loading, setLoading] = useState(true);
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -98,6 +98,34 @@ function Hero({ searchSurah, setSearchSurah, onSelectSurah }) {
           </div>
         </div>
       </div>
+
+      {/* Terakhir Dibaca Banner */}
+      {lastRead && (
+        <div className="flex items-center justify-between p-4 sm:p-5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-3xl mb-8 animate-slide-up">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">Terakhir Dibaca</h4>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+                Surah {lastRead.surahNameLatin} : Ayat {lastRead.ayahNumber}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onSelectSurah(lastRead.surahNumber, lastRead.ayahNumber)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+          >
+            <span>Lanjutkan</span>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Ayat Hari Ini (Verse of the Day) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-sm">
