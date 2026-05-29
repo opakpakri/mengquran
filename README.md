@@ -32,7 +32,7 @@
 - **Build Tool**: [Vite 8](https://vite.dev/)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) (using the official `@tailwindcss/vite` compiler plugin)
 - **Local Storage**: Browser LocalStorage
-- **Official APIs**: [API Muslim v3 (myQuran)](https://api.myquran.com/v3/doc) & [e-Quran API]()
+- **Official APIs**: [API Muslim v3 (myQuran)](https://api.myquran.com/v3/doc) & [e-Quran API](https://equran.id/apidev)
 
 ---
 
