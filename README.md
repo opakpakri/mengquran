@@ -23,6 +23,10 @@ Mengquran adalah aplikasi web Al-Quran online modern yang dirancang untuk member
   - Transisi warna yang halus antara mode terang yang segar dan mode gelap bernuansa emerald-slate yang teduh dan premium.
 - **🔍 Mesin Pencarian Ayat Dinamis**
   - Cari ayat berdasarkan kata kunci terjemahan secara dinamis dilengkapi dengan pagination serta rujukan langsung ke surah terkait.
+- **🕌 Jadwal Sholat Otomatis & Hitung Mundur**
+  - Jadwal sholat harian terintegrasi dengan data resmi Kemenag RI.
+  - Pencarian ID kota/kabupaten otomatis dengan fitur penyimpanan prefensi kota di peramban (*LocalStorage*).
+  - **Hitung Mundur Sholat**: Menampilkan hitung mundur waktu nyata (*real-time countdown*) ke jadwal sholat berikutnya dengan efek sorotan visual card yang dinamis.
 
 ---
 

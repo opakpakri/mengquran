@@ -5,7 +5,9 @@ import SurahCard from './components/SurahCard';
 import SurahDetail from './components/SurahDetail';
 import SearchPage from './components/SearchPage';
 import BookmarksPage from './components/BookmarksPage';
+import SholatPage from './components/SholatPage';
 import Footer from './components/Footer';
+import Swal from 'sweetalert2';
 
 
 function App() {
@@ -121,6 +123,8 @@ function App() {
       document.title = 'Cari Ayat Al-Quran | Mengquran';
     } else if (activeTab === 'bookmarks') {
       document.title = 'Ayat Tersimpan | Mengquran';
+    } else if (activeTab === 'sholat') {
+      document.title = 'Jadwal Sholat | Mengquran';
     }
   }, [activeTab, selectedSurahNumber, surahs]);
 
@@ -140,26 +144,58 @@ function App() {
   };
 
   // Toggle Bookmark
-  const toggleBookmark = (surahNumber, surahNameLatin, ayahNumber, arab = null, translation = null) => {
-    setBookmarks(prev => {
-      const index = prev.findIndex(b => b.surahNumber === surahNumber && b.ayahNumber === ayahNumber);
-      if (index > -1) {
-        // Remove bookmark
-        return prev.filter((_, i) => i !== index);
-      } else {
-        // Add bookmark
-        return [
-          ...prev,
-          {
-            surahNumber,
-            surahNameLatin,
-            ayahNumber,
-            arab,
-            translation
-          }
-        ];
-      }
-    });
+  const toggleBookmark = (surahNumber, surahNameLatin, ayahNumber, arab = null, translation = null, latin = null) => {
+    const isAlreadyBookmarked = bookmarks.some(b => b.surahNumber === surahNumber && b.ayahNumber === ayahNumber);
+    
+    if (isAlreadyBookmarked) {
+      // Remove bookmark
+      setBookmarks(prev => prev.filter(b => !(b.surahNumber === surahNumber && b.ayahNumber === ayahNumber)));
+      Swal.fire({
+        title: 'Bookmark Dihapus',
+        text: `Ayat ${surahNumber}:${ayahNumber} telah dihapus dari bookmarks.`,
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: darkMode ? '#0f172a' : '#ffffff',
+        color: darkMode ? '#f8fafc' : '#334155',
+        iconColor: '#10b981',
+        customClass: {
+          popup: 'rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-md font-sans'
+        }
+      });
+    } else {
+      // Add bookmark
+      setBookmarks(prev => [
+        ...prev,
+        {
+          surahNumber,
+          surahNameLatin,
+          ayahNumber,
+          arab,
+          translation,
+          latin
+        }
+      ]);
+      Swal.fire({
+        title: 'Bookmark Ditambahkan',
+        text: `Ayat ${surahNumber}:${ayahNumber} disimpan ke bookmarks.`,
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: darkMode ? '#0f172a' : '#ffffff',
+        color: darkMode ? '#f8fafc' : '#334155',
+        iconColor: '#10b981',
+        customClass: {
+          popup: 'rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-md font-sans'
+        }
+      });
+    }
   };
 
   // Update Last Read
@@ -168,6 +204,22 @@ function App() {
       surahNumber,
       surahNameLatin,
       ayahNumber
+    });
+    Swal.fire({
+      title: 'Terakhir Dibaca Diperbarui',
+      text: `Surah ${surahNameLatin} ayat ${ayahNumber} ditandai sebagai terakhir dibaca.`,
+      icon: 'info',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      background: darkMode ? '#0f172a' : '#ffffff',
+      color: darkMode ? '#f8fafc' : '#334155',
+      iconColor: '#6366f1',
+      customClass: {
+        popup: 'rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-md font-sans'
+      }
     });
   };
 
@@ -264,6 +316,10 @@ function App() {
             onSelectSurah={handleSelectSurah}
             setActiveTab={setActiveTab}
           />
+        )}
+
+        {activeTab === 'sholat' && (
+          <SholatPage />
         )}
       </main>
 

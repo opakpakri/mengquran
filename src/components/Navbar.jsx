@@ -64,6 +64,17 @@ function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode }) {
               >
                 Bookmarks
               </button>
+              <button
+                id="nav-sholat-btn"
+                onClick={() => setActiveTab('sholat')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  activeTab === 'sholat'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Jadwal Sholat
+              </button>
             </div>
 
             {/* Dark Mode Toggle */}
@@ -169,6 +180,19 @@ function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode }) {
             }`}
           >
             Bookmarks
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('sholat');
+              setIsOpen(false);
+            }}
+            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+              activeTab === 'sholat'
+                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/10'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+            }`}
+          >
+            Jadwal Sholat
           </button>
         </div>
       )}
