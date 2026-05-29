@@ -109,7 +109,7 @@ function App() {
   // Dynamic Page Title for SEO & UX
   useEffect(() => {
     if (activeTab === 'surah') {
-      document.title = 'Mengquran';
+      document.title = 'Mengquran | Digital Modern Al-Quran';
     } else if (activeTab === 'detail' && selectedSurahNumber) {
       const currentSurah = surahs.find(s => s.number === selectedSurahNumber);
       if (currentSurah) {

@@ -13,6 +13,34 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
   const [playingAudioId, setPlayingAudioId] = useState(null); // 'surah' or 'ayah-{number}'
   const audioRef = useRef(null);
 
+  // Text Font Size States
+  const [arabicSize, setArabicSize] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mengquran_arabic_size');
+      return saved ? parseFloat(saved) : 2.25;
+    } catch {
+      return 2.25;
+    }
+  });
+
+  const [translationSize, setTranslationSize] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mengquran_translation_size');
+      return saved ? parseFloat(saved) : 1;
+    } catch {
+      return 1;
+    }
+  });
+
+  // Sync font sizes to localStorage
+  useEffect(() => {
+    localStorage.setItem('mengquran_arabic_size', arabicSize);
+  }, [arabicSize]);
+
+  useEffect(() => {
+    localStorage.setItem('mengquran_translation_size', translationSize);
+  }, [translationSize]);
+
   // Fetch Surah Details
   useEffect(() => {
     const fetchSurahDetail = async () => {
@@ -247,6 +275,60 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
         )}
       </div>
 
+      {/* Settings Panel */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 mb-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Ukuran Teks</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-6 w-full sm:w-auto justify-end">
+          {/* Slider Arab */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between">
+            <span className="text-xs text-slate-500 dark:text-slate-400">Arab:</span>
+            <input
+              type="range"
+              min="1.75"
+              max="3.5"
+              step="0.1"
+              value={arabicSize}
+              onChange={(e) => setArabicSize(parseFloat(e.target.value))}
+              className="accent-emerald-500 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg cursor-pointer w-28"
+            />
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 w-8 text-right">{Math.round((arabicSize / 2.25) * 100)}%</span>
+          </div>
+
+          {/* Slider Latin & Terjemahan */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between">
+            <span className="text-xs text-slate-500 dark:text-slate-400">Latin & Arti:</span>
+            <input
+              type="range"
+              min="0.8"
+              max="1.6"
+              step="0.05"
+              value={translationSize}
+              onChange={(e) => setTranslationSize(parseFloat(e.target.value))}
+              className="accent-emerald-500 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg cursor-pointer w-28"
+            />
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 w-8 text-right">{Math.round(translationSize * 100)}%</span>
+          </div>
+
+          {/* Reset button */}
+          <button
+            onClick={() => {
+              setArabicSize(2.25);
+              setTranslationSize(1);
+            }}
+            className="text-[10px] font-bold text-slate-400 hover:text-emerald-500 px-2.5 py-1 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/20 rounded-lg cursor-pointer transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
       {/* Surah Bismillah Divider (except Al-Fatihah (1) and At-Taubah (9)) */}
       {surah.number !== 1 && surah.number !== 9 && (
         <div className="text-center py-6 mb-8 text-slate-700 dark:text-slate-300 font-arabic text-2xl tracking-wide select-none">
@@ -331,20 +413,29 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
 
               {/* Arabic Script */}
               <div className="text-right mb-4">
-                <p className="arabic-text text-2xl sm:text-3xl text-slate-800 dark:text-slate-100 font-arabic leading-loose tracking-wide select-all">
+                <p 
+                  className="arabic-text text-slate-800 dark:text-slate-100 font-arabic tracking-wide select-all"
+                  style={{ fontSize: `${arabicSize}rem`, lineHeight: `${arabicSize * 1.3}rem` }}
+                >
                   {ayah.arab}
                 </p>
               </div>
 
               {/* Latin Transliteration */}
               {ayah.latin && (
-                <p className="text-emerald-600 dark:text-emerald-400 text-sm sm:text-base leading-relaxed font-light mb-3 select-all italic">
+                <p 
+                  className="text-emerald-600 dark:text-emerald-400 leading-relaxed font-light mb-3 select-all italic"
+                  style={{ fontSize: `${translationSize}rem` }}
+                >
                   {ayah.latin}
                 </p>
               )}
 
               {/* Translation */}
-              <p className="text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light mb-4">
+              <p 
+                className="text-slate-700 dark:text-slate-300 leading-relaxed font-light mb-4"
+                style={{ fontSize: `${translationSize}rem` }}
+              >
                 {ayah.translation}
               </p>
 
