@@ -25,8 +25,31 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
       try {
         const res = await fetch(`https://api.myquran.com/v3/quran/${surahNumber}`);
         const data = await res.json();
+        
+        let equranAyat = [];
+        try {
+          const equranRes = await fetch(`https://equran.id/api/v2/surat/${surahNumber}`);
+          const equranData = await equranRes.json();
+          if (equranData.code === 200 && equranData.data && equranData.data.ayat) {
+            equranAyat = equranData.data.ayat;
+          }
+        } catch (e) {
+          console.error("Gagal mengambil latin dari equran.id:", e);
+        }
+
         if (data.status && data.data) {
-          setSurah(data.data);
+          const enrichedAyahs = data.data.ayahs.map(ayah => {
+            const match = equranAyat.find(a => a.nomorAyat === ayah.ayah_number);
+            return {
+              ...ayah,
+              latin: match ? match.teksLatin : ''
+            };
+          });
+
+          setSurah({
+            ...data.data,
+            ayahs: enrichedAyahs
+          });
           setExpandedTafsir({});
           setTafsirTabs({});
         }
@@ -269,7 +292,7 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
 
                   {/* Bookmark Button */}
                   <button
-                    onClick={() => toggleBookmark(surah.number, surah.name_latin, ayah.ayah_number)}
+                    onClick={() => toggleBookmark(surah.number, surah.name_latin, ayah.ayah_number, ayah.arab, ayah.translation, ayah.latin)}
                     className={`p-2 rounded-xl transition-all duration-150 cursor-pointer ${
                       isBookmarked
                         ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20'
@@ -312,6 +335,13 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
                   {ayah.arab}
                 </p>
               </div>
+
+              {/* Latin Transliteration */}
+              {ayah.latin && (
+                <p className="text-emerald-600 dark:text-emerald-400 text-sm sm:text-base leading-relaxed font-light mb-3 select-all italic">
+                  {ayah.latin}
+                </p>
+              )}
 
               {/* Translation */}
               <p className="text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light mb-4">

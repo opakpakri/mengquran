@@ -17,7 +17,24 @@ function Hero({ searchSurah, setSearchSurah, onSelectSurah, lastRead }) {
       const res = await fetch('https://api.myquran.com/v3/quran/random');
       const data = await res.json();
       if (data.status && data.data) {
-        setRandomAyah(data.data);
+        const ayah = data.data;
+        let latinText = '';
+        try {
+          const equranRes = await fetch(`https://equran.id/api/v2/surat/${ayah.surah_number}`);
+          const equranData = await equranRes.json();
+          if (equranData.code === 200 && equranData.data && equranData.data.ayat) {
+            const match = equranData.data.ayat.find(a => a.nomorAyat === ayah.ayah_number);
+            if (match) {
+              latinText = match.teksLatin;
+            }
+          }
+        } catch (e) {
+          console.error("Gagal mengambil latin acak:", e);
+        }
+        setRandomAyah({
+          ...ayah,
+          latin: latinText
+        });
       }
     } catch (err) {
       console.error("Gagal memuat ayat acak:", err);
@@ -165,6 +182,13 @@ function Hero({ searchSurah, setSearchSurah, onSelectSurah, lastRead }) {
                 {randomAyah.arab}
               </p>
             </div>
+
+            {/* Latin Transliteration */}
+            {randomAyah.latin && (
+              <p className="text-emerald-600 dark:text-emerald-400 text-sm sm:text-base leading-relaxed font-light italic">
+                {randomAyah.latin}
+              </p>
+            )}
 
             {/* Terjemahan */}
             <div className="space-y-2">

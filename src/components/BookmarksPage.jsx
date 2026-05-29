@@ -58,6 +58,13 @@ function BookmarksPage({ bookmarks, toggleBookmark, onSelectSurah, setActiveTab 
                   </div>
                 )}
 
+                {/* Latin Transliteration */}
+                {bookmark.latin && (
+                  <p className="text-emerald-600 dark:text-emerald-400 text-sm sm:text-base leading-relaxed font-light mb-3 select-none italic">
+                    {bookmark.latin}
+                  </p>
+                )}
+
                 {/* Translation */}
                 {bookmark.translation && (
                   <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light">

@@ -109,18 +109,18 @@ function App() {
   // Dynamic Page Title for SEO & UX
   useEffect(() => {
     if (activeTab === 'surah') {
-      document.title = 'Mengqur\'an - Al-Quran Online Modern';
+      document.title = 'Mengquran';
     } else if (activeTab === 'detail' && selectedSurahNumber) {
       const currentSurah = surahs.find(s => s.number === selectedSurahNumber);
       if (currentSurah) {
-        document.title = `Surah ${currentSurah.name_latin} | Mengqur'an`;
+        document.title = `Surah ${currentSurah.name_latin} | Mengquran`;
       } else {
-        document.title = 'Membaca Surah | Mengqur\'an';
+        document.title = 'Membaca Surah | Mengquran';
       }
     } else if (activeTab === 'search') {
-      document.title = 'Cari Ayat Al-Quran | Mengqur\'an';
+      document.title = 'Cari Ayat Al-Quran | Mengquran';
     } else if (activeTab === 'bookmarks') {
-      document.title = 'Ayat Tersimpan | Mengqur\'an';
+      document.title = 'Ayat Tersimpan | Mengquran';
     }
   }, [activeTab, selectedSurahNumber, surahs]);
 
