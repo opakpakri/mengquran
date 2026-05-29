@@ -13,6 +13,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('surah'); // 'surah', 'detail', 'search', 'bookmarks'
   const [selectedSurahNumber, setSelectedSurahNumber] = useState(null);
   const [selectedAyahNumber, setSelectedAyahNumber] = useState(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   
   // Data States
   const [surahs, setSurahs] = useState([]);
@@ -73,6 +74,19 @@ function App() {
       localStorage.removeItem('mengquran_last_read');
     }
   }, [lastRead]);
+
+  // Scroll Listener for Scroll to Top Button
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Fetch Surah List
   useEffect(() => {
@@ -255,6 +269,19 @@ function App() {
 
       {/* Footer component */}
       <Footer />
+
+      {/* Scroll to Top Floating Button */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-6 right-6 z-50 p-3.5 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-full shadow-lg shadow-emerald-500/20 dark:shadow-slate-900/40 hover:-translate-y-0.5 cursor-pointer transition-all duration-300 animate-fade-in flex items-center justify-center"
+          aria-label="Scroll to Top"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
