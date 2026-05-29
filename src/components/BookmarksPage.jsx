@@ -67,7 +67,7 @@ function BookmarksPage({ bookmarks, toggleBookmark, onSelectSurah, setActiveTab 
 
                 {/* Translation */}
                 {bookmark.translation && (
-                  <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light">
+                  <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light select-none">
                     {bookmark.translation}
                   </p>
                 )}

@@ -414,7 +414,7 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
               {/* Arabic Script */}
               <div className="text-right mb-4">
                 <p 
-                  className="arabic-text text-slate-800 dark:text-slate-100 font-arabic tracking-wide select-all"
+                  className="arabic-text text-slate-800 dark:text-slate-100 font-arabic tracking-wide select-none"
                   style={{ fontSize: `${arabicSize}rem`, lineHeight: `${arabicSize * 1.3}rem` }}
                 >
                   {ayah.arab}
@@ -424,7 +424,7 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
               {/* Latin Transliteration */}
               {ayah.latin && (
                 <p 
-                  className="text-emerald-600 dark:text-emerald-400 leading-relaxed font-light mb-3 select-all italic"
+                  className="text-emerald-600 dark:text-emerald-400 leading-relaxed font-light mb-3 select-none italic"
                   style={{ fontSize: `${translationSize}rem` }}
                 >
                   {ayah.latin}
@@ -433,7 +433,7 @@ function SurahDetail({ surahNumber, initialAyah, onBack, bookmarks, toggleBookma
 
               {/* Translation */}
               <p 
-                className="text-slate-700 dark:text-slate-300 leading-relaxed font-light mb-4"
+                className="text-slate-700 dark:text-slate-300 leading-relaxed font-light mb-4 select-none"
                 style={{ fontSize: `${translationSize}rem` }}
               >
                 {ayah.translation}

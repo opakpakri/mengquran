@@ -138,7 +138,7 @@ function SearchPage({ onSelectSurah }) {
                   </div>
 
                   {/* Translation */}
-                  <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light">
+                  <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light select-none">
                     {result.translation}
                   </p>
                 </div>

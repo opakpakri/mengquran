@@ -22,7 +22,7 @@ function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode }) {
               </svg>
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">
+              <span className="text-xl font-bold tracking-tight text-slate-800 dark:text-white select-none">
                 Meng<span className="text-emerald-500">quran</span>
               </span>
             </div>

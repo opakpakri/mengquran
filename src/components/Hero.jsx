@@ -178,21 +178,21 @@ function Hero({ searchSurah, setSearchSurah, onSelectSurah, lastRead }) {
           <div className="space-y-6">
             {/* Teks Arab */}
             <div className="text-right">
-              <p className="arabic-text text-2xl sm:text-3xl text-slate-800 dark:text-slate-100 font-arabic leading-loose tracking-wide">
+              <p className="arabic-text text-2xl sm:text-3xl text-slate-800 dark:text-slate-100 font-arabic leading-loose tracking-wide select-none">
                 {randomAyah.arab}
               </p>
             </div>
 
             {/* Latin Transliteration */}
             {randomAyah.latin && (
-              <p className="text-emerald-600 dark:text-emerald-400 text-sm sm:text-base leading-relaxed font-light italic">
+              <p className="text-emerald-600 dark:text-emerald-400 text-sm sm:text-base leading-relaxed font-light italic select-none">
                 {randomAyah.latin}
               </p>
             )}
 
             {/* Terjemahan */}
             <div className="space-y-2">
-              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light italic">
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-light italic select-none">
                 "{randomAyah.translation}"
               </p>
 
