@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Swal from 'sweetalert2';
 
 function SholatPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,6 +25,146 @@ function SholatPage() {
   // Countdown & Next Prayer State
   const [nextPrayer, setNextPrayer] = useState({ name: '', timeStr: '', key: '', timeDiff: '' });
 
+  // Geolocation states & helpers
+  const [detecting, setDetecting] = useState(false);
+
+  const cleanCityName = (name) => {
+    if (!name) return '';
+    return name
+      .replace(/^(kabupaten|kab\.\s*|kab\s+|kota\s+)/i, '')
+      .replace(/\s+(kabupaten|kab\.\s*|kab|kota)/i, '')
+      .trim();
+  };
+
+  const detectLocation = () => {
+    setDetecting(true);
+    
+    const geocodeCoords = async (lat, lon) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`, {
+          headers: { 'User-Agent': 'Mengquran Web App' }
+        });
+        const data = await res.json();
+        
+        if (data && data.address) {
+          const addr = data.address;
+          const rawCityName = addr.city || addr.town || addr.village || addr.regency || addr.municipality || addr.county || addr.state_district;
+          if (rawCityName) {
+            await searchAndSetCity(rawCityName);
+            return true;
+          }
+        }
+        return false;
+      } catch (err) {
+        console.error('Error reverse geocoding:', err);
+        return false;
+      }
+    };
+
+    const searchAndSetCity = async (rawCityName) => {
+      const cleaned = cleanCityName(rawCityName);
+      if (!cleaned) throw new Error('Nama kota tidak valid');
+      
+      const res = await fetch(`https://api.myquran.com/v3/sholat/kota/cari/${encodeURIComponent(cleaned)}`);
+      const data = await res.json();
+      
+      if (data.status && data.data && data.data.length > 0) {
+        let bestMatch = data[0];
+        const isRegency = /regency|kabupaten|kab/i.test(rawCityName);
+        const isKota = /city|kota|town/i.test(rawCityName);
+        
+        if (isRegency) {
+          const match = data.find(c => c.lokasi.toUpperCase().includes('KAB.'));
+          if (match) bestMatch = match;
+        } else if (isKota) {
+          const match = data.find(c => c.lokasi.toUpperCase().includes('KOTA'));
+          if (match) bestMatch = match;
+        }
+        
+        setSelectedCity(bestMatch);
+        
+        Swal.fire({
+          title: 'Lokasi Ditemukan',
+          text: `Lokasi Anda disesuaikan ke: ${bestMatch.lokasi}`,
+          icon: 'success',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#334155',
+          iconColor: '#10b981',
+          customClass: {
+            popup: 'rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-md font-sans'
+          }
+        });
+      } else {
+        throw new Error('Kota tidak ditemukan di database myQuran');
+      }
+    };
+
+    const handleSuccess = async (position) => {
+      const { latitude, longitude } = position.coords;
+      const ok = await geocodeCoords(latitude, longitude);
+      if (!ok) {
+        handleIPFallback();
+      } else {
+        setDetecting(false);
+      }
+    };
+
+    const handleError = () => {
+      handleIPFallback();
+    };
+
+    const handleIPFallback = async () => {
+      try {
+        const ipRes = await fetch('https://ipinfo.io/json');
+        const ipData = await ipRes.json();
+        
+        if (ipData && ipData.loc) {
+          const [lat, lon] = ipData.loc.split(',');
+          const ok = await geocodeCoords(lat, lon);
+          if (ok) {
+            setDetecting(false);
+            return;
+          }
+        }
+        throw new Error('Gagal deteksi IP');
+      } catch (err) {
+        console.error('IP Fallback error:', err);
+        setDetecting(false);
+        Swal.fire({
+          title: 'Deteksi Gagal',
+          text: 'Tidak dapat menentukan lokasi Anda secara otomatis. Silakan cari kota Anda secara manual.',
+          icon: 'error',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 4000,
+          timerProgressBar: true,
+          background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#334155',
+          iconColor: '#f43f5e',
+          customClass: {
+            popup: 'rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-md font-sans'
+          }
+        });
+      }
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      });
+    } else {
+      handleIPFallback();
+    }
+  };
+
   // Save selected city to LocalStorage
   useEffect(() => {
     localStorage.setItem('mengquran_sholat_city', JSON.stringify(selectedCity));
@@ -34,11 +175,42 @@ function SholatPage() {
     const fetchSchedule = async () => {
       setLoading(true);
       setError(null);
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      const cacheKey = `mengquran_sholat_schedule_${selectedCity.id}_${dateStr}`;
+
       try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          setSchedule(JSON.parse(cached));
+          setLoading(false);
+          return;
+        }
+
         const res = await fetch(`https://api.myquran.com/v3/sholat/jadwal/${selectedCity.id}/today`);
         const data = await res.json();
         if (data.status && data.data) {
           setSchedule(data.data);
+          localStorage.setItem(cacheKey, JSON.stringify(data.data));
+
+          // Clean up old sholat caches
+          try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('mengquran_sholat_schedule_') && key !== cacheKey) {
+                keysToRemove.push(key);
+              }
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+          } catch (e) {
+            console.error('Error cleaning old sholat caches:', e);
+          }
         } else {
           setError('Gagal memuat jadwal sholat untuk kota ini.');
         }
@@ -257,8 +429,8 @@ function SholatPage() {
         </div>
 
         {/* Search City / Kabupaten */}
-        <div ref={dropdownRef} className="relative w-full md:w-80">
-          <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 shadow-sm focus-within:border-emerald-500/50 transition-colors duration-200">
+        <div ref={dropdownRef} className="relative w-full md:w-96 flex gap-2">
+          <div className="flex flex-grow items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 shadow-sm focus-within:border-emerald-500/50 transition-colors duration-200">
             <svg className="w-4 h-4 text-slate-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -278,9 +450,26 @@ function SholatPage() {
             )}
           </div>
 
+          {/* Detect Location Button */}
+          <button
+            onClick={detectLocation}
+            disabled={detecting}
+            className="flex items-center justify-center p-2.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/20 cursor-pointer disabled:opacity-50 transition-colors h-[38px] w-[38px]"
+            title="Deteksi Lokasi Saya"
+          >
+            {detecting ? (
+              <span className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></span>
+            ) : (
+              <svg className="w-4 h-4 animate-pulse-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )}
+          </button>
+
           {/* Autocomplete Dropdown */}
           {showDropdown && (searchQuery.trim().length >= 3 || searchResults.length > 0) && (
-            <div className="absolute left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-xl shadow-lg max-h-60 overflow-y-auto z-20 scrollbar-none animate-slide-up">
+            <div className="absolute left-0 right-0 mt-11 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-xl shadow-lg max-h-60 overflow-y-auto z-20 scrollbar-none animate-slide-up">
               {searchResults.length > 0 ? (
                 searchResults.map((city) => (
                   <button

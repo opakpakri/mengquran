@@ -77,6 +77,63 @@ function App() {
     }
   }, [lastRead]);
 
+  const parsePath = (pathName) => {
+    const path = pathName || window.location.pathname;
+    if (path === '/' || path === '/surah') {
+      return { tab: 'surah', surahNum: null, ayahNum: null };
+    } else if (path === '/cari-ayat') {
+      return { tab: 'search', surahNum: null, ayahNum: null };
+    } else if (path === '/bookmark') {
+      return { tab: 'bookmarks', surahNum: null, ayahNum: null };
+    } else if (path === '/jadwal-sholat') {
+      return { tab: 'sholat', surahNum: null, ayahNum: null };
+    } else if (path.startsWith('/surah/')) {
+      const parts = path.replace('/surah/', '').split('/');
+      const surahNum = parseInt(parts[0], 10);
+      const ayahNum = parts[1] ? parseInt(parts[1], 10) : null;
+      if (!isNaN(surahNum)) {
+        return { tab: 'detail', surahNum, ayahNum };
+      }
+    }
+    return { tab: 'surah', surahNum: null, ayahNum: null };
+  };
+
+  // URL Path Router Synchronization using HTML5 History API
+  useEffect(() => {
+    const handlePopState = () => {
+      const route = parsePath(window.location.pathname);
+      setActiveTab(route.tab);
+      setSelectedSurahNumber(route.surahNum);
+      setSelectedAyahNumber(route.ayahNum);
+    };
+
+    // Sync state with current path on initial load
+    handlePopState();
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToPath = (path) => {
+    window.history.pushState(null, '', path);
+    const route = parsePath(path);
+    setActiveTab(route.tab);
+    setSelectedSurahNumber(route.surahNum);
+    setSelectedAyahNumber(route.ayahNum);
+  };
+
+  const navigateToTab = (tab) => {
+    if (tab === 'surah' || tab === 'detail') {
+      navigateToPath('/surah');
+    } else if (tab === 'search') {
+      navigateToPath('/cari-ayat');
+    } else if (tab === 'bookmarks') {
+      navigateToPath('/bookmark');
+    } else if (tab === 'sholat') {
+      navigateToPath('/jadwal-sholat');
+    }
+  };
+
   // Scroll Listener for Scroll to Top Button
   useEffect(() => {
     const handleScroll = () => {
@@ -94,10 +151,17 @@ function App() {
   useEffect(() => {
     const fetchSurahs = async () => {
       try {
+        const cachedSurahs = localStorage.getItem('mengquran_surah_list');
+        if (cachedSurahs) {
+          setSurahs(JSON.parse(cachedSurahs));
+          setLoadingSurahs(false);
+        }
+        
         const res = await fetch('https://api.myquran.com/v3/quran');
         const data = await res.json();
         if (data.status && data.data) {
           setSurahs(data.data);
+          localStorage.setItem('mengquran_surah_list', JSON.stringify(data.data));
         }
       } catch (err) {
         console.error("Gagal mengambil daftar surah:", err);
@@ -130,17 +194,17 @@ function App() {
 
   // Handle Surah/Ayah Routing Action
   const handleSelectSurah = (surahNum, ayahNum = null) => {
-    setSelectedSurahNumber(surahNum);
-    setSelectedAyahNumber(ayahNum);
-    setActiveTab('detail');
+    if (ayahNum) {
+      navigateToPath(`/surah/${surahNum}/${ayahNum}`);
+    } else {
+      navigateToPath(`/surah/${surahNum}`);
+    }
     // Scroll window to top
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleBackToHome = () => {
-    setActiveTab('surah');
-    setSelectedSurahNumber(null);
-    setSelectedAyahNumber(null);
+    navigateToPath('/surah');
   };
 
   // Toggle Bookmark
@@ -234,7 +298,7 @@ function App() {
       {/* Header / Navbar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={navigateToTab}
         darkMode={darkMode}
         setDarkMode={setDarkMode}
       />
@@ -314,7 +378,7 @@ function App() {
             bookmarks={bookmarks}
             toggleBookmark={toggleBookmark}
             onSelectSurah={handleSelectSurah}
-            setActiveTab={setActiveTab}
+            setActiveTab={navigateToTab}
           />
         )}
 
