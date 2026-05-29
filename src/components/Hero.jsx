@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 function Hero({ searchSurah, setSearchSurah, onSelectSurah, lastRead }) {
   const [randomAyah, setRandomAyah] = useState(null);
   const [loading, setLoading] = useState(true);
   const [audioPlaying, setAudioPlaying] = useState(false);
-  const [audio, setAudio] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const audioRef = useRef(null);
 
   const fetchRandomAyah = async () => {
     setRefreshing(true);
     try {
-      if (audio) {
-        audio.pause();
-        setAudioPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
+      setAudioPlaying(false);
       const res = await fetch('https://api.myquran.com/v3/quran/random');
       const data = await res.json();
       if (data.status && data.data) {
@@ -47,27 +48,27 @@ function Hero({ searchSurah, setSearchSurah, onSelectSurah, lastRead }) {
   useEffect(() => {
     fetchRandomAyah();
     return () => {
-      if (audio) audio.pause();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
     };
   }, []);
 
   const handlePlayAudio = () => {
     if (!randomAyah || !randomAyah.audio_url) return;
 
-    if (audioPlaying && audio) {
-      audio.pause();
+    if (audioPlaying && audioRef.current) {
+      audioRef.current.pause();
       setAudioPlaying(false);
     } else {
-      let activeAudio = audio;
-      if (!activeAudio) {
-        activeAudio = new Audio(randomAyah.audio_url);
-        setAudio(activeAudio);
+      if (!audioRef.current) {
+        audioRef.current = new Audio(randomAyah.audio_url);
+        audioRef.current.onended = () => {
+          setAudioPlaying(false);
+        };
       }
-      activeAudio.play();
+      audioRef.current.play();
       setAudioPlaying(true);
-      activeAudio.onended = () => {
-        setAudioPlaying(false);
-      };
     }
   };
 
